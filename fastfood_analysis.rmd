@@ -1,0 +1,323 @@
+---
+title: "Pakiety Statystyczne"
+author: "Bartłomiej Gintowt 262225, Łukasz Welka 262304"
+date: '2022-12-10'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE)
+```
+# Wstęp
+W raporcie posłużymy się danymi dotyczącymi wartości odżywczych dla pozycji jedzeniowych największych sieci fastfoodowych na terenie Stanów Zjednoczonych.Dane pochodzą ze strony zawierającej różne zbiory danych dla wielu kategorii https://vincentarelbundock.github.io/Rdatasets/datasets.html. Nasze dane zawierają zmienną kategoryczną będącą nazwą restauracji z przypisanymi do nich nazwami posiłków oraz odpowiednio rozpisane wartości odżywcze każdego posiłku będące zmiennymi ciągłymi. Rozważanymi wartościami odżywczymi będą kalorie, kalorie pochodzące z samych tłuszczy, odpowiednio w gramach: liczba tłuszczy, liczba tłuszczy nasyconych, liczba tłuszczy trans, cholesterol, sód, licza węglowodanów, błonnik, cukier, białko, oraz odpowiednio w mikrogramach/10 witaminę A, w miligramach witaminę C, w miligamach/10 wapń. Każda pozycja jedzeniowa będzie przypisana do odpowiedniego indeksu. Ostatnia zmienna jest kategoryczną zmienną określającą czy dany posiłek jest sałątką czy też nie. Możliwe błędy występujące w danych są spowodowane chociażby tym, iż dana restauracja nie przeprowadziła, bądz nie upubliczniła, badań na temat niektórych wartości odżywczych czy witamin zawartych w posiłkach z menu.
+
+W eksperymencie będziemy chcieli sobie odpowiedzieć na pytanie, czy wybrać restaurację McDonald's aby zjeść najzdrowiej jeśli chcemy zjeść obiad składający się z sałatki oraz pozycji niesałatkowej z menu. W przypadku braku sałatek w danej restauracji zamówimy pozycje niesałatkowe o równowartości kalorycznej obiadu uwzględniającym sałatkę. Słowo najzdrowiej zdefiniujemy jako duża ilość białka w stosunku do jak najmniejszej ilości tłuszczu w naszej porcji.
+
+# Wczytanie danych
+Pobrane dane ze strony w formacie csv wczytamy przy pomocy funkcji read.csv. Ustawimy nazwy kolumn, ich klasy oraz zdefiniujemy możliwe błędy.
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+fastfood <- read.csv("fastfood.csv", col.names = c("index","restaurant","item","calories",
+"cal_fat","total_fat","sat_fat","trans_fat","cholesterol","sodium","total_carb","fiber",
+"sugar","protein","vit_a","vit_c","calcium","salad"), header = TRUE, dec=".", 
+na.strings = c("<NA>", "NA","**", "*", "--"), colClasses = c("character", "character",
+"character", "integer", "integer", "integer","numeric", "numeric", "integer", "integer",
+"integer", "integer", "integer", "integer", "integer", "integer", "integer", "factor"))
+```
+Przy pomocy pakietu "expss" nadamy każdej kolumnie odpowiednią etykietę.
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library("expss")
+fastfood = apply_labels(fastfood, index = "Indeks", restaurant = "Restauracja",
+item = "Nazwa pozycji w menu", calories = "Zawartość kalorii w całej porcji", 
+cal_fat = "Zawartość kalorii z samych tłuszczy", total_fat = "Zawartość tłuszczy w gramach", 
+sat_fat = "Zawartość kwasów tłuszczowych nasyconych w gramach", trans_fat = "Zawartość 
+tłuszczy trans w gramach", cholesterol = "Zawartość cholesterolu w gramach", 
+sodium = "Zawartość sodu trans w gramach", total_carb = "Zawartość węglowodanów w gramach",
+fiber = "Zawartość błonnika w gramach", sugar = "Zawartość cukru w gramach", protein = 
+"Zawartość białka w gramach", vit_a = "Zawartość witaminy A w mikrogramach/10", vit_c = 
+"Zawartość witaminy C w miligramach", calcium = "Zawartość wapnia w miligramach/10", 
+salad = "Czy danie jest sałatką")
+```
+
+\newpage
+# Analiza danych
+
+## Kaloryczność
+
+### Pozycje sałatkowe
+
+Przeanalizujemy wykres słupkowy zawierający kaloryczność wszystkich pozycji sałatkowych z naszej bazy danych.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, results='hide'}
+hist(fastfood[fastfood$salad=="Salad",]$calories, main = "Kaloryczność sałatek",
+xlab = "Liczba kalorii", ylab = "Liczba pozycji sałatkowych", col="darkmagenta")
+```
+Rozpatrując powyższy histogram zauważalna jest tendencja malejącej liczby pozycji dla rosnącej liczby kalorii.
+Wyznaczymy średnią wartość kalorii dla sałatki w rozważanym histogramie.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, results='hide'}
+mean(fastfood[fastfood$salad=="Salad",]$calories)
+```
+Wykorzystując funkcję mean otrzymujemy średnią wartość kaloryczną pozycji sałatkowwych równą $352.459$ kalorie.
+
+\newpage
+
+### Pozycje niesałatkowe
+
+Teraz sprawdzimy histogram dla pozycji niesałatkowych.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+hist(fastfood[fastfood$salad=="Other",]$calories, main = "Kaloryczność posiłków niesałatkowych", 
+xlab = "Liczba kalorii", ylab = "Liczba posiłków", col="darkmagenta")
+```
+Rozpatrując powyższy histogram zauważalnie najwięcej posiłków niesałatkowych jest o kaloryczności w przedziale $(250, 750)$.
+Ponownie wyznaczymy średnią dla rozważanego histogramu.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, results='hide'}
+mean(fastfood[fastfood$salad=="Other",]$calories)
+556.5198 - 352.459
+```
+Otrzymujemy średnią wartość kaloryczną posiłku niesałatkowego równą $556.5198$ kalorie.
+
+Zdecydowalnie zauważalna jest przewaga kaloryczności dań niesałatkowych. Zawierają one średnio o $204.0608$ więcej kalorii.
+
+\newpage
+## Zawartość białka w zależności od kalorii
+
+Będziemy chcieli na wykresach rozproszenia opisać zależność białka od ilości spożywanych kalorii. Do każdego wykresu rozproszenia będziemy chcieli dopasować prostą regresji metodą najmniejszych kwadratów dla wszystkich restauracji oraz znaleźć restaurację, która posiadać będzie najwiekszy współczynnik ilości makroskładnika do ilości kalorii.
+
+### Pozycje sałatkowe
+
+Wykres gramów białka w zależności od ilości spożywanych kalorii w sałatce dla wszystkich restauracji zwierających pozycje sałatkowe oraz dopasowana do nich krzywa wyznaczona metodą najmniejszych kwadratów.
+
+Wzór na prostą wyznaczoną metodą najmniejszych kwadratów: $Y=a\cdot X+b$.
+\newline
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library("ggplot2")
+library("tidyverse")
+fit<-lm(fastfood[fastfood$salad=="Salad",]$protein ~ fastfood[fastfood$salad=="Salad",]$calories,data=fastfood)
+
+ggplot(fastfood[fastfood$salad=="Salad",],aes(y=protein,x=calories,color=restaurant))+geom_point()+ggtitle("Wykres zależności białka od liczby kalorii dla pozycji sałatkowych")+xlab("Liczba kalorii")+ylab("Ilość białka")+labs(color="Restauracja")+geom_abline(aes(intercept = fit$coefficients[1],slope = fit$coefficients[2], color="Prosta regresji"))+scale_colour_manual(values = c("purple", "green", "blue", "yellow", "red","magenta", "orange"),guide = guide_legend(override.aes = list(linetype = c(rep("blank", 4), "solid",rep("blank", 2)),shape = c(rep(16, 4), NA, rep(16, 2)))))
+```
+
+
+Wyznaczone współczynniki prostej: $a=0.03430611, b=10.58063$.
+W średniej porcji sałatki liczącej $352.459$ kalorii otrzymujemy średnio $22.67213$ gramów białka.
+
+Wyznaczymy prostą regresji dla każdej restauracji z osobna i sprawdzimy, w której liczba białka dla średniej liczby kalorii jest największa.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, results='hide'}
+res <- "Taco Bell"
+fit<-lm(fastfood[fastfood$salad=="Salad" & fastfood$restaurant==res,]$protein ~ fastfood[fastfood$salad=="Salad" & fastfood$restaurant==res,]$calories,data=fastfood)
+fit$coefficients[2]
+fit$coefficients[1]
+y <- fit$coefficients[2] * mean(fastfood[fastfood$salad=="Salad",]$calories) + fit$coefficients[1]
+y
+
+29.99949 - 22.67213
+```
+
+Dla Arbys liczba białka wynosi $16.95203$ gramów.
+
+Dla Burger King liczba białka wynosi $21.33441$ gramów.
+
+Dla Dairy Queen liczba białka wynosi $29.99949$ gramów.
+
+Dla Mcdonalds liczba białka wynosi $27.11618$ gramów.
+
+Dla Subway liczba białka wynosi $23.66432$ gramów.
+
+Dla Taco Bell liczba białka wynosi $17.3346$ gramów.
+
+Otrzymujemy, iż najlepszy stosunek białka w średniej procji sałatkowej posiadają sałatki restauracji Dairy Queen, który wynosi $29.99949$ gramów białka na $352.459$ spożytych kalorii.
+
+Wykres rozproszenia dla sałatek w restauracji Dairy Queen oraz porównanie prostej regresji dla wszystkich restauracji i dopasowanej dla Dairy Queen.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+fit<-lm(fastfood[fastfood$salad=="Salad" & fastfood$restaurant=="Dairy Queen",]$protein ~ fastfood[fastfood$salad=="Salad" & fastfood$restaurant=="Dairy Queen",]$calories,data=fastfood)
+
+fit2<-lm(fastfood[fastfood$salad=="Salad",]$protein ~ fastfood[fastfood$salad=="Salad",]$calories,data=fastfood)
+
+ggplot(fastfood[fastfood$salad=="Salad" & fastfood$restaurant=="Dairy Queen",],aes(y=protein,x=calories,color=restaurant))+geom_point()+geom_abline(aes(intercept = fit$coefficients[1],slope = fit$coefficients[2], color="Prosta regresji dla Dairy Queen")) + ggtitle("Wykres zależności białka od liczby kalorii dla pozycji sałatkowych")+xlab("Liczba kalorii")+ylab("Ilość białka")+labs(color="Restauracja") + geom_abline(aes(intercept = fit2$coefficients[1],slope = fit2$coefficients[2], color="Prosta regresji dla wszystkich restauracji")) + scale_colour_manual(values = c("red", "red", "blue"),guide = guide_legend(override.aes = list(linetype = c(rep("blank", 1), "solid", "solid"),shape = c(rep(16, 1), NA, NA))))
+```
+Zauważyć możemy, iż proste się przecinają na wysokości około $160$ kalorii i wówczas prosta regresji dla restauracji Dairy Queen posiada wyższy współczynnik ilości białka. Dla rozpatrywanej przez nas wartości średnich kalorii w sałatce będzie to o aż $7.32736$ gramów białka więcej. Otrzymane wnioski są jednak bardzo mało precyzyjne a model jest niezwykle uproszczony zważywszy na ilość danych z restauracji Dairy Queen, których jest zaledwie $5$.
+
+\newpage
+### Pozycje niesałatkowe
+
+Wykres gramów białka w zależności od ilości spożywanych kalorii w pozycji niesałatwkoej dla wszystkich restauracji oraz dopasowana do nich krzywa wyznaczona metodą najmniejszych kwadratów.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library("ggplot2")
+library("tidyverse")
+fit<-lm(fastfood[fastfood$salad=="Other",]$protein ~ fastfood[fastfood$salad=="Other",]$calories,data=fastfood)
+
+ggplot(fastfood[fastfood$salad=="Other",],aes(y=protein,x=calories,color=restaurant))+geom_point()+ggtitle("Wykres zależności białka od liczby kalorii dla pozycji niesałatkowych")+xlab("Liczba kalorii")+ylab("Ilość białka")+labs(color="Restauracja")+geom_abline(aes(intercept = fit$coefficients[1],slope = fit$coefficients[2], color="Prosta regresji"))+scale_colour_manual(values = c("purple", "green", "blue", "yellow", "magenta","red", "orange","cyan","deeppink"),guide = guide_legend(override.aes = list(linetype = c(rep("blank", 5), "solid",rep("blank", 3)),shape = c(rep(16, 5), NA, rep(16, 3)))))
+```
+
+Wyznaczone współczynniki prostej: $a=0.05539463, b=-2.153257$
+W średniej porcji dla pozycji niesałatkowej liczącej $554.8899$ kalorie otrzymujemy średnio $28.67495$ gramów białka.
+
+Wyznaczymy prostą regresji dla każdej restauracji z osobna i sprawdzimy, w której liczba białka dla średniej liczby kalorii jest największa.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, results="hide"}
+res <- "Taco Bell"
+fit<-lm(fastfood[fastfood$salad=="Other"& fastfood$restaurant==res,]$protein ~ fastfood[fastfood$salad=="Other"& fastfood$restaurant==res,]$calories,data=fastfood)
+fit$coefficients[2]
+fit$coefficients[1]
+y <- fit$coefficients[2] * mean(fastfood[fastfood$salad=="Other",]$calories) + fit$coefficients[1]
+y
+
+42.20813 - 28.67495
+```
+
+Dla Arbys liczba białka wynosi $30.84705$ gramów.
+
+Dla Burger King liczba białka wynosi $26.36652$ gramów.
+
+Dla Chick Fil-A liczba białka wynosi $42.20813$ gramów.
+
+Dla Dairy Queen liczba białka wynosi $24.97774$ gramów.
+
+Dla Mcdonalds liczba białka wynosi $33.00549$ gramów.
+
+Dla Sonic liczba białka wynosi $25.6869$ gramów.
+
+Dla Subway liczba białka wynosi $32.16767$ gramów.
+
+Dla Taco Bell liczba białka wynosi $21.09848$ gramów.
+
+Otrzymujemy, iż najlepszy stosunek białka w średniej procji niesałatkowej posiadają pozycje restauracji Chick Fil-A, który wynosi $42.20813$ gramów białka na $554.8899$ spożytych kalorii.
+
+Wykres rozproszenia dla pozycji niesałatkowych w restauracji Chick Fil-A oraz porównanie prostej regresji dla wszystkich restauracji i dopasowanej dla Chick Fil-A.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+fit<-lm(fastfood[fastfood$salad=="Other" & fastfood$restaurant=="Chick Fil-A",]$protein ~ fastfood[fastfood$salad=="Other" & fastfood$restaurant=="Chick Fil-A",]$calories,data=fastfood)
+
+fit2<-lm(fastfood[fastfood$salad=="Other",]$protein ~ fastfood[fastfood$salad=="Other",]$calories,data=fastfood)
+
+ggplot(fastfood[fastfood$salad=="Other" & fastfood$restaurant=="Chick Fil-A",],aes(y=protein,x=calories,color=restaurant))+geom_point()+geom_abline(aes(intercept = fit$coefficients[1],slope = fit$coefficients[2], color="Prosta regresji dla Chick Fil-A")) + ggtitle("Wykres zależności białka od liczby kalorii dla pozycji niesałatkowych")+xlab("Liczba kalorii")+ylab("Ilość białka")+labs(color="Restauracja") + geom_abline(aes(intercept = fit2$coefficients[1],slope = fit2$coefficients[2], color="Prosta regresji dla wszystkich restauracji")) + scale_colour_manual(values = c("red", "red", "blue"),guide = guide_legend(override.aes = list(linetype = c(rep("blank", 1), "solid", "solid"),shape = c(rep(16, 1), NA, NA))))
+```
+
+Na powyższym wykresie zauważyć możemy, iż liczba białka w zależności od kalorii dla restauracji Chick Fil-A jest zdecydowanie wieksza niż dla wszystkich restauracji. Dla średniej porcji pozycji niesałatkowej wynoszącej $554.8899$ kalorie będzie to aż o $13.53318$ gramóW białka więcej. Tym razem posiadamy jednak znacząco większą ilość danych dla rozpatrywanej restauracji przez co zwiększona precyzja modelu umożliwa nam wyciągniecie bardziej trafnych wniosków.
+
+
+## Ilość tłuszczu w zależności od kalorii
+
+Naszym zadaniem będzie wyznaczenie ile gramów tłuszczu znajdować się bedzie w średniej porcji sałatki i pozycji niesałatkowej. Podobnie jak w przypadku białka wykorzystamy model regresji wyznaczony przy pomocy metody najmniejszych kwadratów.
+
+### Sałatki
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library("ggplot2")
+library("tidyverse")
+fit<-lm(fastfood[fastfood$salad=="Salad",]$total_fat ~ fastfood[fastfood$salad=="Salad",]$calories,data=fastfood)
+
+ggplot(fastfood[fastfood$salad=="Salad",],aes(y=total_fat,x=calories,color=restaurant))+geom_point()+ggtitle("Wykres zależności tłuszczu od liczby kalorii dla pozycji sałatkowych")+xlab("Liczba kalorii")+ylab("Ilość tłuszczu")+labs(color="Restauracja")+geom_abline(aes(intercept = fit$coefficients[1],slope = fit$coefficients[2], color="Prosta regresji"))+scale_colour_manual(values = c("purple", "green", "blue", "yellow", "red","magenta", "orange"),guide = guide_legend(override.aes = list(linetype = c(rep("blank", 4), "solid",rep("blank", 2)),shape = c(rep(16, 4), NA, rep(16, 2)))))
+```
+```{r, warning=FALSE, message=FALSE, echo=FALSE, results="hide"}
+res <- "Taco Bell"
+fit<-lm(fastfood[fastfood$salad=="Salad" & fastfood$restaurant==res,]$total_fat ~ fastfood[fastfood$salad=="Salad" & fastfood$restaurant==res,]$calories,data=fastfood)
+fit$coefficients[2]
+fit$coefficients[1]
+y <- fit$coefficients[2] * mean(fastfood[fastfood$salad=="Salad",]$calories) + fit$coefficients[1]
+y
+```
+
+Wyznaczone współczynniki prostej: $a=0.065214, b=-3.214771$.
+W średniej porcji sałatki liczącej $352.459$ kalorii otrzymujemy średnio $19.77049$ gramów tłuszczu.
+
+Wyznaczymy teraz ilość gramów tłuszczu w średniej porcji dla każdej restauracji z osobna.
+
+Dla Arbys liczba tłuszczu wynosi $24.77239$ gramów.
+
+Dla Burger King liczba tłuszczu wynosi $23.25195$ gramów.
+
+Dla Dairy Queen liczba tłuszczu wynosi $18.29239$ gramów.
+
+Dla Mcdonalds liczba tłuszczu wynosi $17.23484$ gramów.
+
+Dla Subway liczba tłuszczu wynosi $22.29565$ gramów.
+
+Dla Taco Bell liczba tłuszczu wynosi $15.40493$ gramów.
+
+Zauważamy, iż najwięcej tłuszczu w pozycjach sałatkowych posiada restauracja Arbys, która w średniej porcji $352.459$ kalorii zawiera $24.77239$ gramów białka.
+
+### Pozycje niesałatkowe
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+library("ggplot2")
+library("tidyverse")
+fit<-lm(fastfood[fastfood$salad=="Other",]$total_fat ~ fastfood[fastfood$salad=="Other",]$calories,data=fastfood)
+
+
+ggplot(fastfood[fastfood$salad=="Other",],aes(y=total_fat,x=calories,color=restaurant))+geom_point()+ggtitle("Wykres zależności tłuszczu od liczby kalorii dla pozycji niesałatkowych")+xlab("Liczba kalorii")+ylab("Ilość tłuszczu")+labs(color="Restauracja")+geom_abline(aes(intercept = fit$coefficients[1],slope = fit$coefficients[2], color="Prosta regresji"))+scale_colour_manual(values = c("purple", "green", "blue", "yellow", "magenta","red", "orange","cyan","deeppink"),guide = guide_legend(override.aes = list(linetype = c(rep("blank", 5), "solid",rep("blank", 3)),shape = c(rep(16, 5), NA, rep(16, 3)))))
+```
+```{r, warning=FALSE, message=FALSE, echo=FALSE, results="hide"}
+res <- "Taco Bell"
+fit<-lm(fastfood[fastfood$salad=="Other"& fastfood$restaurant==res,]$total_fat ~ fastfood[fastfood$salad=="Other"& fastfood$restaurant==res,]$calories,data=fastfood)
+fit$coefficients[2]
+fit$coefficients[1]
+y <- fit$coefficients[2] * mean(fastfood[fastfood$salad=="Other",]$calories) + fit$coefficients[1]
+y
+```
+
+Wyznaczone współczynniki prostej: $a=0.06045329, b=-6.136846$.
+W średniej porcji sałatki liczącej $554.8899$ kalorii otrzymujemy średnio $27.50661$ gramów tłuszczu.
+
+Dla Arbys liczba tłuszczu wynosi $27.48732$ gramów.
+
+Dla Burger King liczba tłuszczu wynosi $32.44017$ gramów.
+
+Dla Chick Fil-A liczba tłuszczu wynosi $24.66056$ gramów.
+
+Dla Dairy Queen liczba tłuszczu wynosi $31.15785$ gramów.
+
+Dla Mcdonalds liczba tłuszczu wynosi $26.40137$ gramów.
+
+Dla Sonic liczba tłuszczu wynosi $31.23681$ gramów.
+
+Dla Subway liczba tłuszczu wynosi $18.61405$ gramów.
+
+Dla Taco Bell liczba tłuszczu wynosi $25.87321$ gramów.
+
+Zatem najwiekszą ilość gramów w średniej porcji posiadają pozycje restauracji Sonic.
+
+
+## Co najlepiej zjeść
+
+Będziemy teraz chcieli znaleźć restaurację, w której współczynnik białka do ilości tłuszczu w średniej porcji będzie największy. Naszym celem jest zjedzenie obiadu składającego się sałatki oraz pozycji niesałatkowej. Uwzględniajać, iż nie wszystkie restauracje posiadają sałatki w swojej ofercie, wybierzemy w takich równowartość kaloryczną średniej sałatki i niesałatki ale w postaci posiłków niesałatkowych.
+
+Wyznaczamy współczynnik ilości białka do ilości tłuszczu dla średnich wartości, korzystając z poprzednich wiliczeń ilości makroskładnika na ilość kalorii.
+
+```{r, warning=FALSE, message=FALSE, echo=FALSE, results="hide"}
+(16.95203+30.84705)/ (24.77239+27.48732)
+(21.33441+26.36652)/ (23.25195+32.44017)
+(42.20813 + 29.75114)/ (24.66056+14.56586)
+(29.99949+24.97774)/ (18.29239+31.15785)
+(27.11618+33.00549)/ (17.23484+26.40137)
+(25.6869 + 17.67061)/(31.23681+16.57517)
+(23.66432 + 32.16767)/ (22.29565+18.61405)
+(17.3346 + 21.09848)/ (15.40493+25.87321)
+```
+
+Dla Arbys współczynnik wynosi $0.914645$.
+
+Dla Burger King współczynnik wynosi $0.8565113$.
+
+Dla Chick Fil-A współczynnik wynosi $1.834459$.
+
+Dla Dairy Queen współczynnik wynosi $1.111769$.
+
+Dla Mcdonalds współczynnik wynosi $1.377793$.
+
+Dla Sonic współczynnik wynosi $0.9068336$.
+
+Dla Subway współczynnik wynosi $1.364762$.
+
+Dla Taco Bell współczynnik wynosi $0.9310759$.
+
+Otrzymujemy, że najwyższy współczynnik białka do ilości tłuszczu w naszym obiedzie posiada restauracja Chick Fil-A wynoszący $1.834459$.
+
+
+# Wnioski
