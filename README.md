@@ -4,7 +4,7 @@
   Bartłomiej Gintowt
   
 ## Krótki opis projektu:
-  Analizy danych z najpopularniejszych restauracji fastfoodowych w USA.
+  Analiza danych z najpopularniejszych restauracji fastfoodowych w USA.
   
 ## Pliki odpowiadające odpowiedniej częsci raportu:
 
