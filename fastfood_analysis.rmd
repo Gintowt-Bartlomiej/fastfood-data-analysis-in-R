@@ -1,6 +1,6 @@
 ---
 title: "Pakiety Statystyczne"
-author: "Bartłomiej Gintowt 262225, Łukasz Welka 262304"
+author: "Bartłomiej Gintowt"
 date: '2022-12-10'
 output: pdf_document
 ---
