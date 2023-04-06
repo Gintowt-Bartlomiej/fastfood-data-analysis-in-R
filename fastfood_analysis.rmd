@@ -321,3 +321,15 @@ Otrzymujemy, że najwyższy współczynnik białka do ilości tłuszczu w naszym
 
 
 # Wnioski
+
+Przeprowadzając analizę dla danych z amerykańskich restauracji otrzymaliśmy, że średnia wartość kaloryczna
+sałatek wynosi 352.459, natomiast pozycji niesałatkowych 556.5198. Po przeanalizowaniu wykresów zależności
+białka od liczby kalorii oraz tłuszczu od liczby kalorii, postanowiliśmy wyznaczyć parametry prostej regesji
+liniowej za pomocą metody najmniejszych kwadratów. Dzięki wyliczonym parametrom obliczyliśmy liczbę
+białka i tłuszczu spożytego w średniej porcji dla dań sałatkowych i niesałatkowych. Następnie wyznaczyliśmy
+współczynnik liczby białka od liczby tłuszczu dla średnich porcji i wybraliśmy restaurację o najwyższej
+wartości współczynnika.
+Powołując się na powyższą analizę danych możemy wywnioskować, iż postawione przez nas pytanie badawcze
+jest fałszywe. Mcdonald‘s nie jest restauracją, do której chcemy się udać aby zjeść najzdrwoszy obiad, w
+naszym tłumaczeniu jak największą ilość białka w stosunku do jak najmniejszej liczby tłuszczu w porcji.
+Restauracją tą jest Chick Fil-A, której współczynnik ilości białka do tłuszczu wynosi 1.834459.
