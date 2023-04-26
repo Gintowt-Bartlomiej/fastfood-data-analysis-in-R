@@ -14,5 +14,5 @@
 ### Kod wykorzystany do raportu w języku R
   fastfood_analysis.rmd
  
-### Raport w pliku pdf
+### Raport w pliku pdf 
   fastfood_analysis.pdf
